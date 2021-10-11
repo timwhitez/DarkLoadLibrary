@@ -1,4 +1,7 @@
 #include "ldrutils.h"
+#if _M_X64
+#include "syscalls.h"
+#endif
 
 BOOL IsValidPE(
     PBYTE pbData
@@ -35,6 +38,38 @@ BOOL MapSections(
         ((PIMAGE_DOS_HEADER)pdModule->pbDllData)->e_lfanew
     );
 
+
+
+    // try get prefered address
+#if _M_X64
+    pdModule->ModuleBase = pNtHeaders->OptionalHeader.ImageBase;
+    SIZE_T RegionSize = pNtHeaders->OptionalHeader.SizeOfImage;
+    NTSTATUS status = NtAllocateVirtualMemory(
+        (HANDLE)-1,
+        (PVOID)&pdModule->ModuleBase,
+        0,
+        &RegionSize,
+        MEM_RESERVE | MEM_COMMIT,
+        PAGE_READWRITE
+    );
+    if (!NT_SUCCESS(status) || pdModule->ModuleBase != pNtHeaders->OptionalHeader.ImageBase)
+    {
+        pdModule->ModuleBase = 0;
+        RegionSize = pNtHeaders->OptionalHeader.SizeOfImage;
+        status = NtAllocateVirtualMemory(
+            (HANDLE)-1,
+            (PVOID)&pdModule->ModuleBase,
+            0,
+            &RegionSize,
+            MEM_RESERVE | MEM_COMMIT,
+            PAGE_READWRITE
+        );
+    }
+    if (!NT_SUCCESS(status))
+    {
+        return FALSE;
+    }
+#else
     // try get prefered address
     pdModule->ModuleBase = (ULONG_PTR)VirtualAlloc(
         (LPVOID)(pNtHeaders->OptionalHeader.ImageBase),
@@ -57,6 +92,8 @@ BOOL MapSections(
     {
         return FALSE;
     }
+#endif
+
 
     // copy across the headers
     for (INT i = 0; i < pNtHeaders->OptionalHeader.SizeOfHeaders; i++)
@@ -342,13 +379,28 @@ BOOL BeginExecution(
             {
                 dwProtect |= PAGE_NOCACHE;
             }
-
+#if _M_X64
+            PVOID BaseAddress = (PVOID)(pdModule->ModuleBase + pSectionHeader->VirtualAddress);
+            SIZE_T RegionSize = pSectionHeader->SizeOfRawData;
+            NTSTATUS status = NtProtectVirtualMemory(
+                (HANDLE)-1,
+                &BaseAddress,
+                &RegionSize,
+                dwProtect,
+                &dwProtect
+            );
+            if (!NT_SUCCESS(status))
+            {
+                return FALSE;
+            }
+#else
             VirtualProtect(
                 (LPVOID)(pdModule->ModuleBase + pSectionHeader->VirtualAddress),
                 pSectionHeader->SizeOfRawData,
                 dwProtect,
                 &dwProtect
             );
+#endif
         }
     }
 

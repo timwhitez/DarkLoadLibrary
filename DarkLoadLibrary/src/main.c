@@ -21,8 +21,8 @@ VOID main()
 		return;
 	}
 
-	_ThisIsAFunction ThisIsAFunction = GetProcAddress(
-		DarkModule.ModuleBase,
+	_ThisIsAFunction ThisIsAFunction = GetFunctionAddress(
+		(HMODULE)DarkModule.ModuleBase,
 		"CallThisFunction"
 	);
 

@@ -32,6 +32,8 @@ BOOL MapSections(
     PIMAGE_BASE_RELOCATION pRelocation;
     PIMAGE_SECTION_HEADER pSectionHeader;
 
+    VIRTUALALLOC pVirtualAlloc = (VIRTUALALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "VirtualAlloc");
+
     pNtHeaders = RVA(
         PIMAGE_NT_HEADERS, 
         pdModule->pbDllData, 
@@ -71,7 +73,7 @@ BOOL MapSections(
     }
 #else
     // try get prefered address
-    pdModule->ModuleBase = (ULONG_PTR)VirtualAlloc(
+    pdModule->ModuleBase = (ULONG_PTR)pVirtualAlloc(
         (LPVOID)(pNtHeaders->OptionalHeader.ImageBase),
         (SIZE_T)pNtHeaders->OptionalHeader.SizeOfImage,
         MEM_RESERVE | MEM_COMMIT,
@@ -80,7 +82,7 @@ BOOL MapSections(
 
     if (!pdModule->ModuleBase)
     {
-        pdModule->ModuleBase = (ULONG_PTR)VirtualAlloc(
+        pdModule->ModuleBase = (ULONG_PTR)pVirtualAlloc(
             0,
             (SIZE_T)pNtHeaders->OptionalHeader.SizeOfImage,
             MEM_RESERVE | MEM_COMMIT,
@@ -356,6 +358,10 @@ BOOL BeginExecution(
 
     pSectionHeader = IMAGE_FIRST_SECTION(pNtHeaders);
 
+    VIRTUALPROTECT pVirtualProtect = (VIRTUALPROTECT)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "VirtualProtect");
+    FLUSHINSTRUCTIONCACHE pFlushInstructionCache = (FLUSHINSTRUCTIONCACHE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "FlushInstructionCache");
+
+
     for (INT i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++, pSectionHeader++)
     {
         if (pSectionHeader->SizeOfRawData)
@@ -393,7 +399,7 @@ BOOL BeginExecution(
                 return FALSE;
             }
 #else
-            VirtualProtect(
+            pVirtualProtect(
                 (LPVOID)(pdModule->ModuleBase + pSectionHeader->VirtualAddress),
                 pSectionHeader->SizeOfRawData,
                 dwProtect,
@@ -404,7 +410,7 @@ BOOL BeginExecution(
     }
 
     // flush the instruction cache
-    FlushInstructionCache((HANDLE)-1, NULL, 0);
+    pFlushInstructionCache((HANDLE)-1, NULL, 0);
 
     // execute the TLS callbacks
     pDataDir = &pNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS];

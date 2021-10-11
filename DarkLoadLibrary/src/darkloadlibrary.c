@@ -5,6 +5,9 @@ BOOL ParseFileName(
 	LPWSTR lpwFileName
 )
 {
+	HEAPALLOC pHeapAlloc = (HEAPALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "HeapAlloc");
+	GETPROCESSHEAP pGetProcessHeap = (GETPROCESSHEAP)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "GetProcessHeap");
+
 	if (lpwFileName == NULL)
 	{
 		pdModule->ErrorMsg = L"Invalid filename";
@@ -13,26 +16,26 @@ BOOL ParseFileName(
 
 	pdModule->LocalDLLName = lpwFileName;
 
-	HANDLE hHeap = GetProcessHeap();
+	HANDLE hHeap = pGetProcessHeap();
 	if (!hHeap)
 	{
 		pdModule->ErrorMsg = L"Failed to find valid heap";
 		return FALSE;
 	}
 
-	pdModule->CrackedDLLName = (PWCHAR)HeapAlloc(
+	pdModule->CrackedDLLName = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH * 2
 	);
 
-	PWCHAR lpwExt = (PWCHAR)HeapAlloc(
+	PWCHAR lpwExt = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH
 	);
 
-	PWCHAR lpwFilename = (PWCHAR)HeapAlloc(
+	PWCHAR lpwFilename = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH
@@ -81,7 +84,13 @@ BOOL ReadFileToBuffer(
 	PDARKMODULE pdModule
 )
 {
-	HANDLE hFile = CreateFileW(
+	CREATEFILEW pCreateFileW = (CREATEFILEW)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "CreateFileW");
+	VIRTUALALLOC pVirtualAlloc = (VIRTUALALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "VirtualAlloc");
+	GETFILESIZE pGetFileSize = (GETFILESIZE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "GetFileSize");
+	READFILE pReadFile = (READFILE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "ReadFile");
+	CLOSEHANDLE pCloseHandle = (CLOSEHANDLE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "CloseHandle");
+
+	HANDLE hFile = pCreateFileW(
         pdModule->LocalDLLName,
         GENERIC_READ, 
         FILE_SHARE_READ | FILE_SHARE_WRITE, 
@@ -97,7 +106,7 @@ BOOL ReadFileToBuffer(
 		return FALSE;
     }
 
-	DWORD dwSize = GetFileSize(
+	DWORD dwSize = pGetFileSize(
 		hFile,
 		NULL
 	);
@@ -105,11 +114,11 @@ BOOL ReadFileToBuffer(
 	if (dwSize == INVALID_FILE_SIZE)
     {
         pdModule->ErrorMsg = L"Failed to get DLL file size";
-		CloseHandle(hFile);
+		pCloseHandle(hFile);
 		return FALSE;
     }
 
-	pdModule->pbDllData = VirtualAlloc(
+	pdModule->pbDllData = pVirtualAlloc(
         NULL, 
         dwSize, 
         MEM_COMMIT | MEM_RESERVE, 
@@ -119,11 +128,11 @@ BOOL ReadFileToBuffer(
 	if (pdModule->pbDllData == NULL)
 	{
 		pdModule->ErrorMsg = L"Failed to allocate memory for DLL data";
-		CloseHandle(hFile);
+		pCloseHandle(hFile);
 		return FALSE;
 	}
 
-	if (!ReadFile(
+	if (!pReadFile(
         hFile, 
         pdModule->pbDllData, 
         dwSize, 
@@ -131,11 +140,11 @@ BOOL ReadFileToBuffer(
         NULL))
     {
         pdModule->ErrorMsg = L"Failed to read data from DLL file";
-		CloseHandle(hFile);
+		pCloseHandle(hFile);
 		return FALSE;
     }
 
-	if (!CloseHandle(hFile))
+	if (!pCloseHandle(hFile))
     {
         pdModule->ErrorMsg = L"Failed to close handle on DLL file";
 		return FALSE;

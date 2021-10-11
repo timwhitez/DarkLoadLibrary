@@ -2,9 +2,8 @@
 
 ULONG LdrHashEntry(UNICODE_STRING UniName, BOOL XorHash) {
 	ULONG ulRes = 0;
-	RTLHASHUNICODESTRING pRtlHashUnicodeString = (RTLHASHUNICODESTRING)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "RtlHashUnicodeString");
-
-	pRtlHashUnicodeString(
+	
+	RtlHashUnicodeString(
 		&UniName,
 		TRUE,
 		0,
@@ -26,9 +25,7 @@ PLDR_DATA_TABLE_ENTRY2 FindLdrTableEntry(
 	PPEB2 pPeb;
 	PLDR_DATA_TABLE_ENTRY2 pCurEntry;
 	PLIST_ENTRY pListHead, pListEntry;
-
-	_WCSNICMP p_wcsnicmp = (_WCSNICMP)GetFunctionAddress(IsModulePresent(L"ucrtbased.dll"), "_wcsnicmp");
-
+	
 	pPeb = (PPEB2)READ_MEMLOC(PEB_OFFSET);
 
 	if (pPeb == NULL)
@@ -45,9 +42,9 @@ PLDR_DATA_TABLE_ENTRY2 FindLdrTableEntry(
 		pCurEntry = CONTAINING_RECORD(pListEntry, LDR_DATA_TABLE_ENTRY2, InLoadOrderLinks);
 		pListEntry = pListEntry->Flink;
 
-		INT BaseName1 = p_wcsnicmp(BaseName, pCurEntry->BaseDllName.Buffer, (pCurEntry->BaseDllName.Length / sizeof(wchar_t)) - 4);
-		INT BaseName2 = p_wcsnicmp(BaseName, pCurEntry->BaseDllName.Buffer, pCurEntry->BaseDllName.Length / sizeof(wchar_t));
-		
+		INT BaseName1 = _wcsnicmp(BaseName, pCurEntry->BaseDllName.Buffer, (pCurEntry->BaseDllName.Length / sizeof(wchar_t)) - 4);
+		INT BaseName2 = _wcsnicmp(BaseName, pCurEntry->BaseDllName.Buffer, pCurEntry->BaseDllName.Length / sizeof(wchar_t));
+
 		if (!BaseName1 || !BaseName2)
 		{
 			return pCurEntry;
@@ -64,9 +61,6 @@ PRTL_RB_TREE FindModuleBaseAddressIndex()
 	SIZE_T stEnd = NULL;
 	PRTL_BALANCED_NODE pNode = NULL;
 	PRTL_RB_TREE pModBaseAddrIndex = NULL;
-
-	RTLCOMPAREMEMORY pRtlCompareMemory = (RTLCOMPAREMEMORY)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "RtlCompareMemory");
-	STRCMP pstrcmp = (STRCMP)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "strcmp");
 
 	PLDR_DATA_TABLE_ENTRY2 pLdrEntry = FindLdrTableEntry(L"ntdll.dll");
 
@@ -92,7 +86,7 @@ PRTL_RB_TREE FindModuleBaseAddressIndex()
 
 		for (INT i = 0; i < pNtHeaders->FileHeader.NumberOfSections; i++)
 		{
-			if (!pstrcmp(".data", (LPCSTR)pSection->Name))
+			if (!strcmp(".data", (LPCSTR)pSection->Name))
 			{
 				stBegin = (SIZE_T)pLdrEntry->DllBase + pSection->VirtualAddress;
 				dwLen = pSection->Misc.VirtualSize;
@@ -106,7 +100,7 @@ PRTL_RB_TREE FindModuleBaseAddressIndex()
 		for (DWORD i = 0; i < dwLen - sizeof(SIZE_T); ++stBegin, ++i) 
 		{
 
-			SIZE_T stRet = pRtlCompareMemory(
+			SIZE_T stRet = RtlCompareMemory(
 				(PVOID)stBegin, 
 				(PVOID)&pNode, 
 				sizeof(SIZE_T)
@@ -140,7 +134,7 @@ BOOL AddBaseAddressEntry(
 	PVOID lpBaseAddr
 )
 {
-	RTLRBINSERTNODEEX pRtlRbInsertNodeEx = (RTLRBINSERTNODEEX)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "RtlRbInsertNodeEx");
+
 	PRTL_RB_TREE pModBaseAddrIndex = FindModuleBaseAddressIndex();
 
 	if (!pModBaseAddrIndex)
@@ -182,7 +176,7 @@ BOOL AddBaseAddressEntry(
 
 	} while (TRUE);
 
-	pRtlRbInsertNodeEx(pModBaseAddrIndex, &pLdrNode->BaseAddressIndexNode, bRight, &pLdrEntry->BaseAddressIndexNode);
+	RtlRbInsertNodeEx(pModBaseAddrIndex, &pLdrNode->BaseAddressIndexNode, bRight, &pLdrEntry->BaseAddressIndexNode);
 
 	return TRUE;
 }
@@ -327,23 +321,10 @@ HMODULE IsModulePresent(
 
 		pLdrTbl = (PLDR_DATA_TABLE_ENTRY2)ucModPtrOff;
 
-		BOOL match = TRUE;
-		for (int i = 0; i < pLdrTbl->BaseDllName.Length / 2; i++)
-		{
-			char a, b;
-			a = pLdrTbl->BaseDllName.Buffer[i];
-			b = lpwName[i];
-			if (a >= 'A' && a <= 'Z')
-				a += 32;
-			if (b >= 'A' && b <= 'Z')
-				b += 32;
-			if (a != b)
-			{
-				match = FALSE;
-				break;
-			}
-		}
-		if (match)
+		if (!_wcsicmp(
+			pLdrTbl->BaseDllName.Buffer, 
+			(PWSTR)lpwName)
+		)
 		{
 			// already loaded, so return the base address
 			return (ULONG_PTR)pLdrTbl->DllBase;
@@ -355,7 +336,7 @@ HMODULE IsModulePresent(
 	return (HMODULE)NULL;
 }
 
-PVOID GetFunctionAddress(
+FARPROC GetFunctionAddress(
 	HMODULE hModule,
 	LPCSTR  lpProcName
 )
@@ -376,37 +357,6 @@ PVOID GetFunctionAddress(
 	if (!ok)
 		return NULL;
 	return FunctionAddress;
-}
-
-BOOL my_strncmp(char* s1, char* s2, size_t n)
-{
-	BOOL match = TRUE;
-	for (size_t i = 0; i < n; i++)
-	{
-		if (s1[i] != s2[i])
-		{
-			match = FALSE;
-			break;
-		}
-	}
-	return match;
-}
-
-size_t my_strlen(char* s)
-{
-	size_t size = -1;
-	while (s[++size]);
-	return size;
-}
-
-void my_strncpy(char* dst, char* src, size_t size)
-{
-	for (size_t i = 0; i < size; i++)
-	{
-		dst[i] = src[i];
-		if (!src[i])
-			break;
-	}
 }
 
 BOOL LocalLdrGetProcedureAddress(
@@ -450,7 +400,7 @@ BOOL LocalLdrGetProcedureAddress(
 			&pNtHeaders->OptionalHeader,
 			pNtHeaders->FileHeader.SizeOfOptionalHeader + i * IMAGE_SIZEOF_SECTION_HEADER
 		);
-		if (my_strncmp(".text", pSecHeader->Name, 6))
+		if (strncmp(".text", pSecHeader->Name, 6) == 0)
 		{
 			startTextSection = RVA(
 				PVOID,
@@ -496,9 +446,9 @@ BOOL LocalLdrGetProcedureAddress(
 					hLibrary,
 					*pRVA
 				);
-				if (my_strlen(functionName) != ProcName->Length)
+				if (strlen(functionName) != ProcName->Length)
 					continue;
-				if (my_strncmp(functionName, ProcName->Buffer, ProcName->Length))
+				if (strncmp(functionName, ProcName->Buffer, ProcName->Length) == 0)
 				{
 					// found it
 					found = TRUE;
@@ -541,7 +491,7 @@ BOOL LocalLdrGetProcedureAddress(
 				if (FunctionPtr < startTextSection || FunctionPtr >  endTextSection)
 				{
 					// this is not a pointer to a function, but a reference to another library with the real address
-					size_t full_length = my_strlen((char*)FunctionPtr);
+					size_t full_length = strlen((char*)FunctionPtr);
 					int lib_length = 0;
 					for (int j = 0; j < full_length; j++)
 					{
@@ -605,11 +555,6 @@ BOOL LinkModuleToPEB(
 	UNICODE_STRING FullDllName, BaseDllName;
 	PLDR_DATA_TABLE_ENTRY2 pLdrEntry = NULL;
 
-	GETPROCESSHEAP pGetProcessHeap = (GETPROCESSHEAP)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "GetProcessHeap");
-	HEAPALLOC pHeapAlloc = (HEAPALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "HeapAlloc");
-	RTLINITUNICODESTRING pRtlInitUnicodeString = (RTLINITUNICODESTRING)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "RtlInitUnicodeString");
-	NTQUERYSYSTEMTIME pNtQuerySystemTime = (NTQUERYSYSTEMTIME)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "NtQuerySystemTime");
-
 	pNtHeaders = RVA(
 		PIMAGE_NT_HEADERS, 
 		pdModule->pbDllData, 
@@ -617,19 +562,19 @@ BOOL LinkModuleToPEB(
 	);
 
 	// convert the names to unicode
-	pRtlInitUnicodeString(
+	RtlInitUnicodeString(
 		&FullDllName, 
 		pdModule->LocalDLLName
 	);
 
-	pRtlInitUnicodeString(
+	RtlInitUnicodeString(
 		&BaseDllName, 
 		pdModule->CrackedDLLName
 	);
 
 	// link the entry to the PEB
-	pLdrEntry = (PLDR_DATA_TABLE_ENTRY2)pHeapAlloc(
-		pGetProcessHeap(),
+	pLdrEntry = (PLDR_DATA_TABLE_ENTRY2)HeapAlloc(
+		GetProcessHeap(),
 		HEAP_ZERO_MEMORY,
 		sizeof(LDR_DATA_TABLE_ENTRY2)
 	);
@@ -640,7 +585,7 @@ BOOL LinkModuleToPEB(
 	}
 
 	// start setting the values in the entry
-	pNtQuerySystemTime(&pLdrEntry->LoadTime);
+	NtQuerySystemTime(&pLdrEntry->LoadTime);
 
 	// do the obvious ones
 	pLdrEntry->ReferenceCount        = 1;
@@ -676,8 +621,8 @@ BOOL LinkModuleToPEB(
 	pLdrEntry->Flags                 = LDRP_IMAGE_DLL | LDRP_ENTRY_INSERTED | LDRP_ENTRY_PROCESSED | LDRP_PROCESS_ATTACH_CALLED;
 
 	// set the correct values in the Ddag node struct
-	pLdrEntry->DdagNode = (PLDR_DDAG_NODE)pHeapAlloc(
-		pGetProcessHeap(),
+	pLdrEntry->DdagNode = (PLDR_DDAG_NODE)HeapAlloc(
+		GetProcessHeap(),
 		HEAP_ZERO_MEMORY,
 		sizeof(LDR_DDAG_NODE)
 	);

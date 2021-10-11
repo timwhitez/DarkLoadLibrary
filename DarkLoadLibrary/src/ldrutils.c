@@ -169,9 +169,10 @@ BOOL ResolveImports(
     PIMAGE_IMPORT_DESCRIPTOR pImportDesc;
     PIMAGE_DELAYLOAD_DESCRIPTOR pDelayDesc;
     PIMAGE_THUNK_DATA pFirstThunk, pOrigFirstThunk;
+    BOOL ok;
 
     STRING aString = { 0 };
-    LDRGETPROCADDRESS pLdrGetProcAddress = NULL;
+    //LDRGETPROCADDRESS pLdrGetProcAddress = NULL;
 
     pNtHeaders = RVA(
         PIMAGE_NT_HEADERS, 
@@ -180,16 +181,6 @@ BOOL ResolveImports(
     );
 
     pDataDir = &pNtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-
-    pLdrGetProcAddress = (LDRGETPROCADDRESS)GetProcAddress(
-        IsModulePresent(L"ntdll.dll"),
-        "LdrGetProcedureAddress"
-    );
-
-    if (!pLdrGetProcAddress)
-    {
-        return FALSE;
-    }
 
     // handle the import table
     if (pDataDir->Size)
@@ -237,12 +228,14 @@ BOOL ResolveImports(
             {
                 if (IMAGE_SNAP_BY_ORDINAL(pOrigFirstThunk->u1.Ordinal))
                 {
-                    pLdrGetProcAddress(
+                    ok = LocalLdrGetProcedureAddress(
                         hLibrary, 
                         NULL, 
                         (WORD)pOrigFirstThunk->u1.Ordinal, 
                         (PVOID *)&(pFirstThunk->u1.Function)
                     );
+                    if (!ok)
+                        return FALSE;
                 }
                 else
                 {
@@ -257,12 +250,14 @@ BOOL ResolveImports(
                         pImportByName->Name
                     );
 
-                    pLdrGetProcAddress(
+                    ok = LocalLdrGetProcedureAddress(
                         hLibrary, 
                         &aString, 
                         0, 
                         (PVOID *)&(pFirstThunk->u1.Function)
                     );
+                    if (!ok)
+                        return FALSE;
                 }
             }
         }
@@ -301,12 +296,14 @@ BOOL ResolveImports(
             {
                 if (IMAGE_SNAP_BY_ORDINAL(pOrigFirstThunk->u1.Ordinal))
                 {
-                    pLdrGetProcAddress(
+                    ok = LocalLdrGetProcedureAddress(
                         hLibrary, 
                         NULL, 
                         (WORD)pOrigFirstThunk->u1.Ordinal, 
                         (PVOID *)&(pFirstThunk->u1.Function)
                     );
+                    if (!ok)
+                        return FALSE;
                 }
                 else
                 {
@@ -321,12 +318,14 @@ BOOL ResolveImports(
                         pImportByName->Name
                     );
 
-                    pLdrGetProcAddress(
+                    ok = LocalLdrGetProcedureAddress(
                         hLibrary, 
                         &aString, 
                         0, 
                         (PVOID *)&(pFirstThunk->u1.Function)
                     );
+                    if (!ok)
+                        return FALSE;
                 }
             }
         }

@@ -336,7 +336,7 @@ HMODULE IsModulePresent(
 	return (HMODULE)NULL;
 }
 
-FARPROC GetFunctionAddress(
+PVOID GetFunctionAddress(
 	HMODULE hModule,
 	LPCSTR  lpProcName
 )

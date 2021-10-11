@@ -5,6 +5,9 @@ BOOL ParseFileName(
 	LPWSTR lpwFileName
 )
 {
+	HEAPALLOC pHeapAlloc = (HEAPALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "HeapAlloc");
+	GETPROCESSHEAP pGetProcessHeap = (GETPROCESSHEAP)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "GetProcessHeap");
+
 	if (lpwFileName == NULL)
 	{
 		pdModule->ErrorMsg = L"Invalid filename";
@@ -13,26 +16,26 @@ BOOL ParseFileName(
 
 	pdModule->LocalDLLName = lpwFileName;
 
-	HANDLE hHeap = GetProcessHeap();
+	HANDLE hHeap = pGetProcessHeap();
 	if (!hHeap)
 	{
 		pdModule->ErrorMsg = L"Failed to find valid heap";
 		return FALSE;
 	}
 
-	pdModule->CrackedDLLName = (PWCHAR)HeapAlloc(
+	pdModule->CrackedDLLName = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH * 2
 	);
 
-	PWCHAR lpwExt = (PWCHAR)HeapAlloc(
+	PWCHAR lpwExt = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH
 	);
 
-	PWCHAR lpwFilename = (PWCHAR)HeapAlloc(
+	PWCHAR lpwFilename = (PWCHAR)pHeapAlloc(
 		hHeap,
 		HEAP_ZERO_MEMORY,
 		MAX_PATH
@@ -45,12 +48,12 @@ BOOL ParseFileName(
 	}
 
 	_wsplitpath(
-        lpwFileName,
-        NULL,
-        NULL,
-        lpwFilename,
-        lpwExt
-    );
+		lpwFileName,
+		NULL,
+		NULL,
+		lpwFilename,
+		lpwExt
+	);
 
 	if (lpwFilename == NULL || lpwExt == NULL)
 	{
@@ -62,7 +65,7 @@ BOOL ParseFileName(
 		pdModule->CrackedDLLName,
 		lpwFilename
 	);
-    
+
 	PWCHAR lpCat = wcscat(
 		pdModule->CrackedDLLName,
 		lpwExt
@@ -81,65 +84,71 @@ BOOL ReadFileToBuffer(
 	PDARKMODULE pdModule
 )
 {
-	HANDLE hFile = CreateFileW(
-        pdModule->LocalDLLName,
-        GENERIC_READ, 
-        FILE_SHARE_READ | FILE_SHARE_WRITE, 
-        NULL, 
-        OPEN_EXISTING, 
-        0, 
-        NULL
-    );
+	CREATEFILEW pCreateFileW = (CREATEFILEW)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "CreateFileW");
+	VIRTUALALLOC pVirtualAlloc = (VIRTUALALLOC)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "VirtualAlloc");
+	GETFILESIZE pGetFileSize = (GETFILESIZE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "GetFileSize");
+	READFILE pReadFile = (READFILE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "ReadFile");
+	CLOSEHANDLE pCloseHandle = (CLOSEHANDLE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "CloseHandle");
+
+	HANDLE hFile = pCreateFileW(
+		pdModule->LocalDLLName,
+		GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL,
+		OPEN_EXISTING,
+		0,
+		NULL
+	);
 
 	if (hFile == INVALID_HANDLE_VALUE)
-    {
-        pdModule->ErrorMsg = L"Failed to open local DLL file";
+	{
+		pdModule->ErrorMsg = L"Failed to open local DLL file";
 		return FALSE;
-    }
+	}
 
-	DWORD dwSize = GetFileSize(
+	DWORD dwSize = pGetFileSize(
 		hFile,
 		NULL
 	);
 
 	if (dwSize == INVALID_FILE_SIZE)
-    {
-        pdModule->ErrorMsg = L"Failed to get DLL file size";
-		CloseHandle(hFile);
+	{
+		pdModule->ErrorMsg = L"Failed to get DLL file size";
+		pCloseHandle(hFile);
 		return FALSE;
-    }
+	}
 
-	pdModule->pbDllData = VirtualAlloc(
-        NULL, 
-        dwSize, 
-        MEM_COMMIT | MEM_RESERVE, 
-        PAGE_READWRITE
-    );
+	pdModule->pbDllData = pVirtualAlloc(
+		NULL,
+		dwSize,
+		MEM_COMMIT | MEM_RESERVE,
+		PAGE_READWRITE
+	);
 
 	if (pdModule->pbDllData == NULL)
 	{
 		pdModule->ErrorMsg = L"Failed to allocate memory for DLL data";
-		CloseHandle(hFile);
+		pCloseHandle(hFile);
 		return FALSE;
 	}
 
-	if (!ReadFile(
-        hFile, 
-        pdModule->pbDllData, 
-        dwSize, 
-        &pdModule->dwDllDataLen, 
-        NULL))
-    {
-        pdModule->ErrorMsg = L"Failed to read data from DLL file";
-		CloseHandle(hFile);
+	if (!pReadFile(
+		hFile,
+		pdModule->pbDllData,
+		dwSize,
+		&pdModule->dwDllDataLen,
+		NULL))
+	{
+		pdModule->ErrorMsg = L"Failed to read data from DLL file";
+		pCloseHandle(hFile);
 		return FALSE;
-    }
+	}
 
-	if (!CloseHandle(hFile))
-    {
-        pdModule->ErrorMsg = L"Failed to close handle on DLL file";
+	if (!pCloseHandle(hFile))
+	{
+		pdModule->ErrorMsg = L"Failed to close handle on DLL file";
 		return FALSE;
-    }
+	}
 
 	return TRUE;
 }
@@ -244,8 +253,8 @@ DARKMODULE DarkLoadLibrary(
 
 	goto Cleanup;
 
-	Cleanup:
-		return dModule;
+Cleanup:
+	return dModule;
 }
 
 BOOL ConcealLibrary(

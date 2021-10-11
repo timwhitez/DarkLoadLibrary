@@ -11,24 +11,15 @@
 	string.MaximumLength = string.Length; \
 	string.Buffer = buffer
 
-typedef NTSTATUS(WINAPI* LDRGETPROCADDRESS)(HMODULE, PANSI_STRING, WORD, PVOID*);
-typedef VOID(WINAPI* RTLRBINSERTNODEEX)(_In_ PRTL_RB_TREE Tree, _In_opt_ PRTL_BALANCED_NODE Parent, _In_ BOOLEAN Right, _Out_ PRTL_BALANCED_NODE Node);
-typedef VOID(NTAPI* RTLINITUNICODESTRING)(PUNICODE_STRING DestinationString, PCWSTR SourceString);
-typedef NTSTATUS(NTAPI* NTQUERYSYSTEMTIME)(PLARGE_INTEGER SystemTime);
-typedef NTSTATUS(NTAPI* RTLHASHUNICODESTRING)(UNICODE_STRING* String, BOOLEAN CaseInSensitive, ULONG HashAlgorithm, ULONG* HashValue);
-typedef SIZE_T(NTAPI* RTLCOMPAREMEMORY)(const VOID* Source1, const VOID* Source2, SIZE_T Length);
-typedef int(__cdecl* _WCSNICMP)(const wchar_t* _Str1, const wchar_t* _Str2, size_t _MaxCount);
-typedef int(__cdecl* STRCMP)(const char* _Str1, const char* _Str2);
-typedef size_t(__cdecl* MBSTOWCS)(wchar_t* Dest, const char* _Source, size_t _MaxCount);
-typedef int(__cdecl* _WCSICMP)(const wchar_t* _Str1, const wchar_t* _Str2);
 
+#ifdef _WIN32
+    #define PEB_OFFSET 0x30
+    #define READ_MEMLOC __readfsdword 
+#endif
 
 #ifdef _WIN64
-#define PEB_OFFSET 0x60
-#define READ_MEMLOC __readgsqword 
-#else
-#define PEB_OFFSET 0x30
-#define READ_MEMLOC __readfsdword 
+    #define PEB_OFFSET 0x60
+    #define READ_MEMLOC __readgsqword 
 #endif
 
 #pragma once
@@ -44,8 +35,7 @@ typedef int(__cdecl* _WCSICMP)(const wchar_t* _Str1, const wchar_t* _Str2);
 
 HMODULE IsModulePresent(LPCWSTR lpwName);
 BOOL LinkModuleToPEB(PDARKMODULE pdModule);
-PVOID GetFunctionAddress(HMODULE hModule, char* ProcName);
-
+FARPROC GetFunctionAddress(HMODULE hModule, LPCSTR  lpProcName);
 BOOL LocalLdrGetProcedureAddress(HMODULE hLibrary, PANSI_STRING ProcName, WORD Ordinal, PVOID* FunctionAddress);
 ULONG LdrHashEntry(UNICODE_STRING UniName, BOOL XorHash);
 PLDR_DATA_TABLE_ENTRY2 FindLdrTableEntry(

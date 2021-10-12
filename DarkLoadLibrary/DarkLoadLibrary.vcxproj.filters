@@ -47,16 +47,16 @@
     <ClInclude Include="include\Shellcode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\syscalls.h">
+    <ClInclude Include="include\darkmodule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\darkmodule.h">
+    <ClInclude Include="include\syscalls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\syscallsstubs.asm">
+    <MASM Include="src\syscallsstubs.asm">
       <Filter>Source Files</Filter>
-    </None>
+    </MASM>
   </ItemGroup>
 </Project>

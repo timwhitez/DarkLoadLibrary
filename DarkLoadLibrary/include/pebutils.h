@@ -66,15 +66,15 @@ BOOL AddHashTableEntry(
 );
 
 NTSTATUS RtlHashUnicodeString(
-	PCUNICODE_STRING String,
-	BOOLEAN          CaseInSensitive,
-	ULONG            HashAlgorithm,
-	PULONG           HashValue
+  PCUNICODE_STRING String,
+  BOOLEAN          CaseInSensitive,
+  ULONG            HashAlgorithm,
+  PULONG           HashValue
 );
 
 void RtlRbInsertNodeEx(
-	RTL_RB_TREE* Tree,
-	RTL_BALANCED_NODE* Parent,
-	BOOLEAN Right,
-	RTL_BALANCED_NODE* Node
+    RTL_RB_TREE *Tree, 
+    RTL_BALANCED_NODE *Parent, 
+    BOOLEAN Right, 
+    RTL_BALANCED_NODE *Node
 );

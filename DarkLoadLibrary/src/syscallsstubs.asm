@@ -2,13 +2,13 @@
 
 EXTERN SW2_GetSyscallNumber: PROC
 
-NtProtectVirtualMemory PROC
+NPVM PROC
 	mov [rsp +8], rcx          ; Save registers.
 	mov [rsp+16], rdx
 	mov [rsp+24], r8
 	mov [rsp+32], r9
 	sub rsp, 28h
-	mov ecx, 0079D1B09h        ; Load function hash into ECX.
+	mov ecx, 0169F2210h        ; Load function hash into ECX.
 	call SW2_GetSyscallNumber  ; Resolve function hash into syscall number.
 	add rsp, 28h
 	mov rcx, [rsp +8]          ; Restore registers.
@@ -18,15 +18,15 @@ NtProtectVirtualMemory PROC
 	mov r10, rcx
 	syscall                    ; Invoke system call.
 	ret
-NtProtectVirtualMemory ENDP
+NPVM ENDP
 
-NtAllocateVirtualMemory PROC
+NAVM PROC
 	mov [rsp +8], rcx          ; Save registers.
 	mov [rsp+16], rdx
 	mov [rsp+24], r8
 	mov [rsp+32], r9
 	sub rsp, 28h
-	mov ecx, 00B9D010Fh        ; Load function hash into ECX.
+	mov ecx, 079917121h        ; Load function hash into ECX.
 	call SW2_GetSyscallNumber  ; Resolve function hash into syscall number.
 	add rsp, 28h
 	mov rcx, [rsp +8]          ; Restore registers.
@@ -36,6 +36,6 @@ NtAllocateVirtualMemory PROC
 	mov r10, rcx
 	syscall                    ; Invoke system call.
 	ret
-NtAllocateVirtualMemory ENDP
+NAVM ENDP
 
 end

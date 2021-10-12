@@ -4,11 +4,11 @@
 #define GDI_HANDLE_BUFFER_SIZE64 60
 
 #ifdef _WIN64
-#define GDI_HANDLE_BUFFER_SIZE GDI_HANDLE_BUFFER_SIZE64
+    #define GDI_HANDLE_BUFFER_SIZE GDI_HANDLE_BUFFER_SIZE64
 #endif
 
 #ifndef _WIN64
-#define GDI_HANDLE_BUFFER_SIZE GDI_HANDLE_BUFFER_SIZE32
+    #define GDI_HANDLE_BUFFER_SIZE GDI_HANDLE_BUFFER_SIZE32
 #endif
 
 typedef ULONG GDI_HANDLE_BUFFER[GDI_HANDLE_BUFFER_SIZE];
@@ -26,12 +26,12 @@ typedef struct _PEB_LDR_DATA2
     UCHAR ShutdownInProgress;
     PVOID ShutdownThreadId;
 #endif
-} PEB_LDR_DATA2, * PPEB_LDR_DATA2;
+} PEB_LDR_DATA2, *PPEB_LDR_DATA2;
 
 typedef struct
 {
-    WORD	offset : 12;
-    WORD	type : 4;
+	WORD	offset : 12;
+	WORD	type : 4;
 } IMAGE_RELOC, * PIMAGE_RELOC;
 
 typedef struct _API_SET_NAMESPACE
@@ -43,7 +43,7 @@ typedef struct _API_SET_NAMESPACE
     ULONG EntryOffset;
     ULONG HashOffset;
     ULONG HashFactor;
-} API_SET_NAMESPACE, * PAPI_SET_NAMESPACE;
+} API_SET_NAMESPACE, *PAPI_SET_NAMESPACE;
 
 
 typedef enum _LDR_DLL_LOAD_REASON
@@ -58,7 +58,7 @@ typedef enum _LDR_DLL_LOAD_REASON
     LoadReasonEnclavePrimary, // REDSTONE3
     LoadReasonEnclaveDependency,
     LoadReasonUnknown = -1
-} LDR_DLL_LOAD_REASON, * PLDR_DLL_LOAD_REASON;
+} LDR_DLL_LOAD_REASON, *PLDR_DLL_LOAD_REASON;
 
 typedef enum _LDR_DDAG_STATE
 {
@@ -82,23 +82,23 @@ typedef enum _LDR_DDAG_STATE
 typedef struct _LDRP_CSLIST
 {
     PSINGLE_LIST_ENTRY Tail;
-} LDRP_CSLIST, * PLDRP_CSLIST;
+} LDRP_CSLIST, *PLDRP_CSLIST;
 
 typedef struct _LDR_SERVICE_TAG_RECORD
 {
-    struct _LDR_SERVICE_TAG_RECORD* Next;
+    struct _LDR_SERVICE_TAG_RECORD *Next;
     ULONG ServiceTag;
-} LDR_SERVICE_TAG_RECORD, * PLDR_SERVICE_TAG_RECORD;
+} LDR_SERVICE_TAG_RECORD, *PLDR_SERVICE_TAG_RECORD;
 
 typedef struct _RTL_BALANCED_NODE
 {
     union
     {
-        struct _RTL_BALANCED_NODE* Children[2];
+        struct _RTL_BALANCED_NODE *Children[2];
         struct
         {
-            struct _RTL_BALANCED_NODE* Left;
-            struct _RTL_BALANCED_NODE* Right;
+            struct _RTL_BALANCED_NODE *Left;
+            struct _RTL_BALANCED_NODE *Right;
         };
     };
     union
@@ -107,7 +107,7 @@ typedef struct _RTL_BALANCED_NODE
         UCHAR Balance : 2;
         ULONG_PTR ParentValue;
     };
-} RTL_BALANCED_NODE, * PRTL_BALANCED_NODE;
+} RTL_BALANCED_NODE, *PRTL_BALANCED_NODE;
 
 typedef struct _LDR_DDAG_NODE
 {
@@ -125,13 +125,13 @@ typedef struct _LDR_DDAG_NODE
     LDR_DDAG_STATE State;
     SINGLE_LIST_ENTRY CondenseLink;
     ULONG PreorderNumber;
-} LDR_DDAG_NODE, * PLDR_DDAG_NODE;
+} LDR_DDAG_NODE, *PLDR_DDAG_NODE;
 
-typedef BOOLEAN(NTAPI* PLDR_INIT_ROUTINE)(
+typedef BOOLEAN (NTAPI *PLDR_INIT_ROUTINE)(
     _In_ PVOID DllHandle,
     _In_ ULONG Reason,
     _In_opt_ PVOID Context
-    );
+);
 
 typedef struct _LDR_DATA_TABLE_ENTRY2
 {
@@ -187,11 +187,11 @@ typedef struct _LDR_DATA_TABLE_ENTRY2
     USHORT TlsIndex;
     LIST_ENTRY HashLinks;
     ULONG TimeDateStamp;
-    struct _ACTIVATION_CONTEXT* EntryPointActivationContext;
+    struct _ACTIVATION_CONTEXT *EntryPointActivationContext;
     PVOID Lock; // RtlAcquireSRWLockExclusive
     PLDR_DDAG_NODE DdagNode;
     LIST_ENTRY NodeModuleLink;
-    struct _LDRP_LOAD_CONTEXT* LoadContext;
+    struct _LDRP_LOAD_CONTEXT *LoadContext;
     PVOID ParentDllBase;
     PVOID SwitchBackContext;
     RTL_BALANCED_NODE BaseAddressIndexNode;
@@ -204,7 +204,7 @@ typedef struct _LDR_DATA_TABLE_ENTRY2
     ULONG ReferenceCount;
     ULONG DependentLoadFlags;
     UCHAR SigningLevel; // since REDSTONE2
-} LDR_DATA_TABLE_ENTRY2, * PLDR_DATA_TABLE_ENTRY2;
+} LDR_DATA_TABLE_ENTRY2, *PLDR_DATA_TABLE_ENTRY2;
 
 typedef struct _PEB2
 {
@@ -265,11 +265,11 @@ typedef struct _PEB2
     ULONG TlsExpansionCounter;
     PVOID TlsBitmap;
     ULONG TlsBitmapBits[2];
-
-    PVOID ReadOnlySharedMemoryBase;
+    
+    PVOID ReadOnlySharedMemoryBase; 
     PVOID SharedData; // HotpatchInformation
-    PVOID* ReadOnlyStaticServerData;
-
+    PVOID *ReadOnlyStaticServerData;
+    
     PVOID AnsiCodePageData; // PCPTABLEINFO
     PVOID OemCodePageData; // PCPTABLEINFO
     PVOID UnicodeCaseTableData; // PNLSTABLEINFO
@@ -285,7 +285,7 @@ typedef struct _PEB2
 
     ULONG NumberOfHeaps;
     ULONG MaximumNumberOfHeaps;
-    PVOID* ProcessHeaps; // PHEAP
+    PVOID *ProcessHeaps; // PHEAP
 
     PVOID GdiSharedHandleTable;
     PVOID ProcessStarterHelper;
@@ -356,7 +356,7 @@ typedef struct _PEB2
     ULONG CloudFileDiagFlags; // REDSTONE4
     CHAR PlaceholderCompatibilityMode;
     CHAR PlaceholderCompatibilityModeReserved[7];
-    struct _LEAP_SECOND_DATA* LeapSecondData; // REDSTONE5
+    struct _LEAP_SECOND_DATA *LeapSecondData; // REDSTONE5
     union
     {
         ULONG LeapSecondFlags;
@@ -367,9 +367,9 @@ typedef struct _PEB2
         };
     };
     ULONG NtGlobalFlag2;
-} PEB2, * PPEB2;
+} PEB2, *PPEB2;
 
 typedef struct _RTL_RB_TREE {
-    PRTL_BALANCED_NODE Root;
-    PRTL_BALANCED_NODE Min;
+	PRTL_BALANCED_NODE Root;
+	PRTL_BALANCED_NODE Min;
 } RTL_RB_TREE, * PRTL_RB_TREE;

@@ -5,6 +5,7 @@
 #include "pebutils.h"
 #include "ldrutils.h"
 
+
 #define LOAD_LOCAL_FILE  0x00000001
 #define LOAD_REMOTE_FILE 0x00000002
 #define LOAD_MEMORY		 0x00000003

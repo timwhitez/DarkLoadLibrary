@@ -1,5 +1,6 @@
 #include "pebutils.h"
 
+
 ULONG LdrHashEntry(UNICODE_STRING UniName, BOOL XorHash) {
 	ULONG ulRes = 0;
 	RTLHASHUNICODESTRING pRtlHashUnicodeString = (RTLHASHUNICODESTRING)GetFunctionAddress(IsModulePresent(L"ntdll.dll"), "RtlHashUnicodeString");

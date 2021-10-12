@@ -48,12 +48,12 @@ BOOL ParseFileName(
 	}
 
 	_wsplitpath(
-		lpwFileName,
-		NULL,
-		NULL,
-		lpwFilename,
-		lpwExt
-	);
+        lpwFileName,
+        NULL,
+        NULL,
+        lpwFilename,
+        lpwExt
+    );
 
 	if (lpwFilename == NULL || lpwExt == NULL)
 	{
@@ -65,7 +65,7 @@ BOOL ParseFileName(
 		pdModule->CrackedDLLName,
 		lpwFilename
 	);
-
+    
 	PWCHAR lpCat = wcscat(
 		pdModule->CrackedDLLName,
 		lpwExt
@@ -91,20 +91,20 @@ BOOL ReadFileToBuffer(
 	CLOSEHANDLE pCloseHandle = (CLOSEHANDLE)GetFunctionAddress(IsModulePresent(L"Kernel32.dll"), "CloseHandle");
 
 	HANDLE hFile = pCreateFileW(
-		pdModule->LocalDLLName,
-		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL
-	);
+        pdModule->LocalDLLName,
+        GENERIC_READ, 
+        FILE_SHARE_READ | FILE_SHARE_WRITE, 
+        NULL, 
+        OPEN_EXISTING, 
+        0, 
+        NULL
+    );
 
 	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		pdModule->ErrorMsg = L"Failed to open local DLL file";
+    {
+        pdModule->ErrorMsg = L"Failed to open local DLL file";
 		return FALSE;
-	}
+    }
 
 	DWORD dwSize = pGetFileSize(
 		hFile,
@@ -112,18 +112,18 @@ BOOL ReadFileToBuffer(
 	);
 
 	if (dwSize == INVALID_FILE_SIZE)
-	{
-		pdModule->ErrorMsg = L"Failed to get DLL file size";
+    {
+        pdModule->ErrorMsg = L"Failed to get DLL file size";
 		pCloseHandle(hFile);
 		return FALSE;
-	}
+    }
 
 	pdModule->pbDllData = pVirtualAlloc(
-		NULL,
-		dwSize,
-		MEM_COMMIT | MEM_RESERVE,
-		PAGE_READWRITE
-	);
+        NULL, 
+        dwSize, 
+        MEM_COMMIT | MEM_RESERVE, 
+        PAGE_READWRITE
+    );
 
 	if (pdModule->pbDllData == NULL)
 	{
@@ -133,22 +133,22 @@ BOOL ReadFileToBuffer(
 	}
 
 	if (!pReadFile(
-		hFile,
-		pdModule->pbDllData,
-		dwSize,
-		&pdModule->dwDllDataLen,
-		NULL))
-	{
-		pdModule->ErrorMsg = L"Failed to read data from DLL file";
+        hFile, 
+        pdModule->pbDllData, 
+        dwSize, 
+        &pdModule->dwDllDataLen, 
+        NULL))
+    {
+        pdModule->ErrorMsg = L"Failed to read data from DLL file";
 		pCloseHandle(hFile);
 		return FALSE;
-	}
+    }
 
 	if (!pCloseHandle(hFile))
-	{
-		pdModule->ErrorMsg = L"Failed to close handle on DLL file";
+    {
+        pdModule->ErrorMsg = L"Failed to close handle on DLL file";
 		return FALSE;
-	}
+    }
 
 	return TRUE;
 }
@@ -253,8 +253,8 @@ DARKMODULE DarkLoadLibrary(
 
 	goto Cleanup;
 
-Cleanup:
-	return dModule;
+	Cleanup:
+		return dModule;
 }
 
 BOOL ConcealLibrary(
